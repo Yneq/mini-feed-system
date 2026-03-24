@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.log
+
+# Virtual Environment
+venv/
+.env
+
+# Docker
+*.env
+*.pid
+docker-compose.override.yml
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
