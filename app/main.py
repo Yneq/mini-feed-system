@@ -12,8 +12,8 @@ app = FastAPI()
 
 app.include_router(user.router, prefix="/users")
 app.include_router(post.router, prefix="/posts")
-# 如果還沒寫 feed 可以先註解
-# app.include_router(feed.router, prefix="/feed")
+app.include_router(feed.router, prefix="/feed")
+
 
 @app.get("/")
 def root():
