@@ -20,19 +20,49 @@ def get_db():
 # Get feed from Redis
 # -----------------------------
 @router.get("/{user_id}/feed")
-def get_feed(user_id: int, db: Session = Depends(get_db)):
-    # 確認 user 存在
+def get_feed(
+    user_id: int,
+    cursor: float = None,
+    limit: int = 10,
+    db: Session = Depends(get_db)
+):
+    # check user
     user = db.query(User).filter(User.id == user_id).first()
+
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # 取 Redis feed list
-    post_ids = redis_client.lrange(f"feed:user:{user_id}", 0, 49)
+    # first page
+    max_score = "+inf" if cursor is None else f"({cursor}"
+
+    # Redis ZSET query
+    post_ids = redis_client.zrevrangebyscore(
+        f"feed:user:{user_id}",
+        max_score,
+        "-inf",
+        start=0,
+        num=limit
+    )
+
     feed = []
+
     for pid in post_ids:
         post_data = redis_client.hgetall(f"post:{pid}")
+
         if post_data:
             feed.append(post_data)
 
-    return feed
+    # next cursor
+    next_cursor = None
+
+    if post_ids:
+        next_cursor = redis_client.zscore(
+            f"feed:user:{user_id}",
+            post_ids[-1]
+        )
+
+    return {
+        "items": feed,
+        "next_cursor": next_cursor
+    }
 

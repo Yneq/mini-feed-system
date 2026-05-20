@@ -29,10 +29,22 @@ def create_post(user_id: int, content: str, db: Session = Depends(get_db)):
     # 3️⃣ 🔥 fan-out
     followers = db.query(Follow).filter(Follow.follow_id == user_id).all()
 
-    for f in followers:
-        redis_client.lpush(f"feed:user:{f.user_id}", post.id)
+    # timestamp 當排序分數
+    score = post.created_at.timestamp()
 
-    # 自己也要
-    redis_client.lpush(f"feed:user:{user_id}", post.id)
+    # followers feed
+    for f in followers:
+        redis_client.zadd(
+            f"feed:user:{f.user_id}",
+            0,
+            -1001
+        )
+
+    # 自己也要看到自己的文
+    redis_client.zadd(
+        f"feed:user:{user_id}",
+        0,
+        -1001
+    )
 
     return post
